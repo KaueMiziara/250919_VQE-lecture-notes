@@ -4,10 +4,6 @@ subtitle: Solving an Optimization Problem with the Variational Quantum Eigensolv
 author: Kauê Miziara
 date: "2026-01-08"
 format:
-  html:
-    theme: cosmo
-    toc: true
-    code-fold: false
   gfm:
     preview-mode: raw
   pdf:
@@ -33,21 +29,23 @@ jupyter: python3
 
 ## 0 - Problem Definition
 
-We have a group of 6 people and we want to divide them into two teams, such that the skill level of each one is similar.
+Consider a group of 6 people we want to divide into two teams, such that the skill level of each one is similar.
 
 - Each person has a skill level
 - Some people are goalkeepers
 
 `Objective`: separate the players into two teams
 
-- > teams must have equal (or similar) skills
-- not everyone needs to be chosen
-- teams do not necessarily need to have the same number of members
+- Teams must have equal (or similar) skills
+- Not everyone needs to be chosen
+- Teams do not necessarily need to have the same number of members
 
 `Constraints`:
 
-- > each player cannot be on more than one team
-- > each team must have exactly one goalkeeper
+- Each player cannot be on more than one team
+- Each team must have **exactly** one goalkeeper
+
+---
 
 ### Player Data
 
@@ -62,14 +60,16 @@ We have a group of 6 people and we want to divide them into two teams, such that
 
 ## 1 - Mapping
 
-We will use binary variables to write the problem in the QUBO model.
+We'll use binary variables to write the problem in the QUBO model.
 
 The variables $(x_0,\dots, x_5)$ represent the players in **Team A**  
 The variables $(x_6,\dots, x_{11})$ represent the players in **Team B**
 
 If $x_i=1$, the corresponding player is in the team associated with $i$; otherwise, $x_i=0$.
 
-- For example, $x_0=1$ and $x_6=0$ means that Alice _is_ in Team A and _is not_ in Team B.
+> e.i., $x_0=1$ and $x_6=0$ means that Alice _is_ in Team A and _is not_ in Team B.
+
+---
 
 ### Objective Function
 
@@ -100,9 +100,9 @@ Where:
 
 $$O_i = \left(\sum (s_ix_i) - ED\right)$$
 
-With $s_i$ being the skill of each player $i$ and $x_i$ the variable indicating whether $i$ should be on the team or not.
+With $x_i$ being the variable indicating whether $i$ should be on the team or not.
 
-- For example, we are talking about Alice when $i=0$ or $i=6$, therefore, $s_0=s_6=5$.
+- We are referring to Alice, for instance, when either $i=0$ or $i=6$; therefore, $s_0=s_6=5$.
 
 Expanding the function in our case, we have:
 
@@ -112,13 +112,15 @@ $$O_0 = \left(\sum_{i\in[0,5]}s_ix_i - ED \right)^2 = [(5x_0 + 6x_1 + 8x_2 + 4x_
 $$O_1 = \left(\sum_{i\in[6,11]}s_ix_i - ED \right)^2 = [(5x_6 + 6x_7 + 8x_8 + 4x_9 + 6x_{10} + 9x_{11}) - ED]^2$$
 $$Obj = [(5x_0 + 6x_1 + 8x_2 + 4x_3 + 6x_4 + 9x_5) - 19]^2 + [(5x_6 + 6x_7 + 8x_8 + 4x_9 + 6x_{10} + 9x_{11}) - 19]^2$$
 
-Although this is a valid QUBO model problem, we can still encounter issues, for example:
+Although this is a valid QUBO model problem, we can still encounter issues, such as:
 
 - Allocating all players to a single team
 - Allocating one player to all teams
-- Not allocating players, keeping $N$ teams with $0$ members (consequently, $Obj=0$, as we wanted, but not in a correct way)
+- Not allocating players, keeping $N$ teams with $0$ members (consequently, $Obj=0$, which is what we wanted, but not the intended way)
 
-To get around possible problems, we add constraints to the model.
+To get around possible problems, we may add constraints to the model.
+
+---
 
 ### Penalty Functions
 
@@ -128,7 +130,7 @@ The first constraint (a player cannot be on more than one team) can be written a
 
 $$x + y \leq 1$$
 
-Since our variables can only take values $0$ or $1$, the inequality forces at least one of the variables to be equal to $0$.
+Since our variables can only take values $0$ or $1$, the inequality forces _at least_ one of the variables to be equal to $0$.
 
 This type of constraint is so common that we have a ready-made penalty function for it:
 
@@ -136,28 +138,34 @@ $$\lambda(xy)$$
 
 Where $\lambda$ is a penalty constant, which will be decided later.
 
-In this case, for each player (and their associated pair of variables), we will have a penalty term. For example, for Alice:
+In this case, for each player (and their associated pair of variables), we will have a penalty term. For Alice:
 
 $$x_0+x_6 \leq 1 \xrightarrow{} \lambda_1(x_0x_6)=c_1$$
 
-Our second type of constraint concerns the goalkeepers; for this, we simply do something similar.
+---
 
-To ensure that each goalkeeper is in at most one of the teams, we create a constraint stating that we cannot have more than one goalkeeper in a given team.
+Our second type of constraint concerns the goalkeepers; for them, we do something similar.
+
+To ensure each goalkeeper is in at most one team, we create a constraint stating that we cannot have more than one goalkeeper per team.
 
 Since our example has two goalkeepers:
 
 $$x_1+x_2 \leq 1 \xrightarrow{} \lambda_2(x_1x_2)=c_7$$
 $$x_7+x_8 \leq 1 \xrightarrow{} \lambda_2(x_7x_8)=c_8$$
 
+---
+
 We will add the penalty functions to the objective function terms, ensuring that the constraints apply.
 
-To choose the $\lambda$ values, we need to keep in mind that:
+To choose the $\lambda$ values, keep in mind that:
 
-- We normally use integer values
+- We often use integer values
 - They must be large enough to increase the objective function value if the constraint is violated
 - They cannot be too high, so as not to bias the objective function
-- - The model would prioritize satisfying all constraints over minimizing the function
+  - The model would prioritize satisfying all constraints over minimizing the function
 - They cannot be too low, otherwise the model would allow too many violations
+
+--- 
 
 ### Mapping Code
 
@@ -172,6 +180,8 @@ Therefore:
 $$C = \sum O_i + \sum c_i$$
 $$C = \left(\sum_{i\in[0,5]}s_ix_i - ED \right)^2 + \left(\sum_{i\in[6,11]}s_ix_i - ED \right)^2 + \lambda_1(x_0x_6 + \dots + x_5x_{11}) + \lambda_2(x_1x_2 + x_7x_8)$$
 
+--- 
+
 We can finally map our problem to a quantum computer using Qiskit.
 
 ```{python}
@@ -183,7 +193,7 @@ from typing import Sequence
 
 ```{python}
 from qiskit import QuantumCircuit
-from qiskit.circuit.library import EfficientSU2
+from qiskit.circuit.library import efficient_su2
 ```
 
 ```{python}
@@ -195,6 +205,8 @@ from qiskit_aer.primitives import Sampler as AerSampler
 from qiskit_optimization import QuadraticProgram
 from qiskit_optimization.converters import QuadraticProgramToQubo
 ```
+
+---
 
 ```{python}
 # Problem data
@@ -211,6 +223,8 @@ teams = ["Alpha", "Beta"]
 num_players = len(players_data)
 num_teams = len(teams)
 ```
+
+---
 
 ```{python}
 strengths = [p['strength'] for p in players_data]
@@ -234,18 +248,22 @@ for i in range(num_players):
         qp.binary_var(name=f'x_{i}_{t}')
 ```
 
+---
+
 The objective function in the code comes from the expansion of our $O_i$. Let $X_i$ be the total strength of team $i$:
 
 $$O_i = \left(X_i - ED\right)^2 = X_i^2 - 2\cdot X_i\cdot ED + ED^2$$
 
 - $X_i^2$ comes from the total team strength; in the expansion, each player $i$ is multiplied by every player $j$ on the same team (since it is the multiplication of a sum).
-- - That is why we say this is the _quadratic_ term, as it depends on two players at a time.
+  - That is why we say this is the _quadratic_ term, as it depends on two players at a time.
 
 - $(-2)\cdot X_i\cdot ED$ is a coefficient that depends only on each player $i$ once.
-- - That is why we say this is the _linear_ term, as it only varies with one player.
+  - That is why we say this is the _linear_ term, as it only varies with one player.
 
 - $ED^2$, in turn, does not depend on any player.
-- - Since its value is always the same, we call it the _constant_ term.
+  - Since its value is always the same, we call it the _constant_ term.
+
+---
 
 ```{python}
 # 2. Define the objective function
@@ -269,24 +287,32 @@ for t in range(num_teams):
 qp.minimize(constant=constant, linear=linear_coeffs, quadratic=quadratic_coeffs)
 ```
 
+---
+
 ```{python}
 # 3. Add constraints
 
 # Each player in exactly one team
 for i in range(num_players):
     player_assignment_vars = {f'x_{i}_{t}': 1 for t in range(num_teams)}
-    qp.linear_constraint(linear=player_assignment_vars, sense='==', rhs=1, name=f'player_{i}_assignment')
+    qp.linear_constraint(linear=player_assignment_vars, 
+        sense='==', rhs=1, name=f'player_{i}_assignment')
 
 # At most one goalkeeper per team
 for t in range(num_teams):
     goalkeeper_assignment_vars = {f'x_{i}_{t}': 1 for i in goalkeeper_indices}
-    qp.linear_constraint(linear=goalkeeper_assignment_vars, sense='<=', rhs=1, name=f'team_{t}_goalkeeper')
+    qp.linear_constraint(linear=goalkeeper_assignment_vars, 
+        sense='<=', rhs=1, name=f'team_{t}_goalkeeper')
 ```
+
+---
 
 ```{python}
 print("Optimization Model (QuadraticProgram) defined.")
 print(qp.prettyprint())
 ```
+
+---
 
 ```{python}
 converter = QuadraticProgramToQubo()
@@ -299,6 +325,8 @@ num_qubits = hamiltonian.num_qubits
 print(f"The problem was mapped to a Hamiltonian of {num_qubits} qubits.")
 ```
 
+---
+
 ```{python}
 print(hamiltonian)
 ```
@@ -307,45 +335,54 @@ print(hamiltonian)
 
 Now that we have our Hamiltonian operator, we can start defining the VQE itself.
 
-Since we will use simulators, we do not need to worry about the transpiler (complex optimization that prepares the circuit for the chosen real hardware) or error mitigation. Therefore, let's start with the Ansatz.
+Since we'll use basic simulators, there's no need to worry about the transpiler or error mitigation. Therefore, let's start with the Ansatz.
+
+---
 
 ### Ansatz
 
 It is a parameterized quantum circuit. The VQE will try to find the parameters that prepare the state of lowest energy.
 
-- `EfficientSU2` is a common choice, which tends to be good in many cases.
+- `EfficientSU2` is a common choice, which tends to be good in many simulated cases.
 
 Being a circuit, under the hood it implements logic gates and entanglement modes.
 
 For educational purposes, we can check the internal circuit, but it is not strictly necessary.
 
-```{python}
-ansatz = EfficientSU2(num_qubits, reps=1, entanglement='linear')
-
-ansatz.draw("mpl")
-```
+---
 
 ```{python}
+ansatz = efficient_su2(num_qubits, reps=1, entanglement='linear')
+
 ansatz.decompose().draw("mpl")
 ```
 
+---
+
 We can alter parameters, such as repetition (creates more layers of rotations and CNOT gates) and entanglement type.
 
-For example, see the circuit with full entanglement:
+For example, check the circuit with full entanglement:
+
+---
 
 ```{python}
-EfficientSU2(num_qubits, reps=1, entanglement='full').decompose().draw("mpl")
+efficient_su2(num_qubits, reps=1, entanglement='full').decompose().draw("mpl")
 ```
+
+---
 
 Although it provides stronger entanglement between qubits, the number of applied logic gates is much higher.
 
-This can cause slowness in the algorithm execution, since the circuit is more complex, and, worse still, it exponentially increases the probability of errors if trying to execute the circuit on a real computer.
+This can cause slowness in the algorithm execution, since the circuit is more complex and dense  
+Even worse, it exponentially increases the probability of errors if executing the circuit on real hardware.
 
 For our example, let's stick with linear entanglement, but using two repetitions.
 
 ```{python}
-ansatz = EfficientSU2(num_qubits, reps=2, entanglement='linear')
+ansatz = efficient_su2(num_qubits, reps=2, entanglement='linear')
 ```
+
+---
 
 ### Classical Optimizer
 
@@ -357,24 +394,32 @@ Furthermore, we need to define an estimator, which will execute the circuit and 
 
 - For our case in the simulator, we will use `AerEstimator`.
 
+---
+
 ```{python}
 estimator = AerEstimator(
-    run_options={"shots": None, "seed": 42}, # Use an ideal simulator without shot noise
-    approximation=True # Allows exact calculation of expectation value, without sampling
+    # An ideal simulator without shot noise
+    run_options={"shots": None, "seed": 42},
+    # Allows exact calculation of expectation value, without sampling
+    approximation=True
 )
 ```
+
+---
 
 ### Cost Function
 
 Here, we will define the cost function in code that will be minimized by the algorithm.
 
-We will add some logs showing how the energy changes at each iteration.
+We'll add some logs showing how the energy changes at each iteration.
 
 ```{python}
 # List to store cost history for later plotting
 cost_history = []
 iteration_count = 0
 ```
+
+---
 
 ```{python}
 # Cost function to be minimized (calculates energy)
@@ -398,11 +443,15 @@ def cost_func(params: Sequence) -> float:
     return energy
 ```
 
+---
+
 ### Algorithm Execution
 
-Here, we will define the initial parameters for the algorithm.
+Here, we define the initial parameters for the algorithm.
 
 Then, we construct the minimization function using `scipy`, passing the optimizer we chose earlier, and run the algorithm.
+
+---
 
 ```{python}
 # Random initial parameters
@@ -410,6 +459,8 @@ num_params = ansatz.num_parameters
 np.random.seed(42) # Setting seed for reproducibility
 initial_params = 2 * np.pi * np.random.random(num_params)
 ```
+
+---
 
 ```{python}
 print("Starting optimization with scipy.minimize...")
@@ -423,6 +474,8 @@ res = minimize(
 )
 print("\nOptimization completed.")
 ```
+
+---
 
 ```{python}
 optimal_params = res.x
@@ -438,11 +491,14 @@ print(f"Minimum Hamiltonian value (eigenvalue): {min_hamiltonian_value:.5f}")
 print(f"Conversion offset: {offset:.5f}")
 print(f"Final minimum solution energy (objective value): {min_energy:.5f}")
 ```
+
+---
+
 ## 3 - Post-Processing and Analysis
 
 Finally, we need to post-process the VQE results to make them interpretable.
 
-First, let's run the circuit one last time, using the parameters optimized by VQE:
+First, let's run the circuit one last time, using the parameters optimized by the VQE:
 
 ```{python}
 # 1. Build the optimal circuit with the found parameters
@@ -462,9 +518,11 @@ counts = result_sampler.quasi_dists[0].binary_probabilities()
 solution_bitstring = max(counts, key=counts.get)
 ```
 
+---
+
 Now that we have our final result, let's interpret it as the result of our problem.
 
-The first step is to translate the obtained bitstring, considering the differences between the Qiskit convention and the usual one.
+The first step is to translate the obtained bitstring, considering the differences between Qiskit's convention and the usual one.
 
 ```{python}
 # 3. Translate the bitstring back to the problem solution
@@ -478,6 +536,8 @@ solution_vars_list = converter.interpret(qubo_solution_vector)
 # Create a dictionary to facilitate variable lookup by name
 solution_vars_dict = {var.name: val for var, val in zip(qp.variables, solution_vars_list)}
 ```
+
+---
 
 Then, we can create a helper function to show the results:
 
@@ -498,7 +558,9 @@ def display_solution(solution_dict, players_data, teams):
     return team_A, team_B
 ```
 
-With this, we can print our results:
+---
+
+With this, we may print our results:
 
 ```{python}
 team_A, team_B = display_solution(solution_vars_dict, players_data, teams)
@@ -516,7 +578,11 @@ print(f"  Players: {', '.join(team_B['players'])}")
 print(f"  Total Strength: {team_B['strength']}")
 ```
 
-Furthermore, since we saved the results of the intermediate iterations, we can plot a graph to see the algorithm's behavior over time:
+---
+
+Furthermore, since we saved the results of the intermediate iterations, we can examine the algorithm's behavior over time:
+
+---
 
 ```{python}
 # Visualize energy convergence
