@@ -4,6 +4,10 @@ subtitle: Solving an Optimization Problem with the Variational Quantum Eigensolv
 author: Kauê Miziara
 date: "2026-01-08"
 format:
+  html:
+    theme: cosmo
+    toc: true
+    code-fold: false
   gfm:
     preview-mode: raw
   pdf:
