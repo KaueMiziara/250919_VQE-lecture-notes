@@ -543,7 +543,7 @@ plt.show()
 
 ## Copyright and Licensing Note
 <p>
-  &copy; Copyright 2025, Kauê Miziara. All rights reserved.
+  &copy; Copyright 2026, Kauê Miziara. All rights reserved.
 </p>
 <p>
   The text, analyses, and structure of this notebook were developed by <i>&lt;Kauê Miziara&gt;</i> as study material and reference.
