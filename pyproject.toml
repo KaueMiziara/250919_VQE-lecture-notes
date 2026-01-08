@@ -1,7 +1,7 @@
 [project]
 name = "250919-vqe-lecture-notes"
 version = "0.1.0"
-description = "Lecture Notes on VQL to solve optimization problems"
+description = "Lecture Notes on VQE to solve optimization problems"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
