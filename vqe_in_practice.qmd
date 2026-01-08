@@ -438,7 +438,7 @@ def cost_func(params: Sequence) -> float:
 
     cost_history.append(energy)
     iteration_count += 1
-    print(f"Iteration: {iteration_count} | Cost (Energy): {energy:.5f}", end="\r", flush=True)
+    # print(f"Iteration: {iteration_count} | Cost (Energy): {energy:.5f}", end="\r", flush=True)
 
     return energy
 ```
